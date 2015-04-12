@@ -45,6 +45,51 @@ def calStandMeanDiff(y, cstat, yneg, ypos):
 
     return (rdiff)
 
+##########################################
+def readRandomSample(data_fname, y, size, goodfeat=None, acc_miny=None, acc_maxy=None):
+    """ Read a random sample
+    """
+    if goodfeat is None:
+        goodfeat = np.arange(ndim)
+    Xsub = np.empty(shape=(size,goodfeat.shape[0]), dtype=float)
+    ysub = np.zeros(shape=size, dtype=int)
+
+    if acc_miny is None:
+        acc_miny = np.min(y)
+    if acc_maxy is None:
+        acc_maxy = np.max(y)
+
+    #yuniq, ycount = np.unique(y, return_counts=True)
+    #tot_acceptable = np.sum(ycount[np.where((yuniq >= acc_miny) & (yuniq <= acc_maxy))[0]])
+
+    acceptable_indx = np.where((y>=acc_miny) & (y<=acc_maxy))[0]
+    assert(acceptable_indx.shape[0] > size)
+    choice_indx = np.sort(np.random.choice(acceptable_indx, size, replace=False))
+    print(choice_indx.shape)
+    #sys.stderr.write("Total Accetables: --> %d"%(tot_acceptable))
+
+    #proba = 1.0 - size/float(tot_acceptable)
+
+
+    with open(data_fname, 'r') as fp:
+        n = 0
+        nf = 0
+        for line in fp:
+#            if (y[n] >= acc_miny and y[n]<=acc_maxy):
+#                if np.random.uniform(low=0, high=1) > proba and nf < size:
+            if nf < size:
+                if n == choice_indx[nf]:
+                    line = line.strip().split()
+                    ix = -1
+                    for i,v in enumerate(line):
+                        if np.any(goodfeat == i):
+                            ix += 1
+                            Xsub[nf,ix] = int(v)
+                    ysub[nf] = y[n]
+
+                    nf += 1
+            n += 1
+    return(Xsub, ysub)
 
 #--------------------------------------#
 #                 MAIN                 #
@@ -66,8 +111,39 @@ def main():
     print(cstat[1][0][1:10])
     print(cstat['all'][1][1:10])
 
-    mean_test = calStandMeanDiff(y, cstat, np.arange(1,157), np.arange(157, 165))
-    print(np.sum(mean_test > 0.1))
+
+    rdiff = calStandMeanDiff(y, cstat, np.arange(1,157), np.arange(157, 165))
+    ## Good Features:
+    goodfeatures = np.where(rdiff > 0.1)[0]
+    print(goodfeatures)
+
+    #gf_test = np.arange(21,35)
+    #Xsub, ysub = readRandomSample(args.train, y[0], \
+    #                          size=2000, goodfeat=gf_test, acc_miny=15, acc_maxy=20)
+    #print(Xsub.shape)
+    #print(np.unique(ysub))
+
+    for i in range(1):
+        Xsub, ysub = readRandomSample(args.train, y[0], size=32000, goodfeat=goodfeatures)
+
+        ysub[np.where(ysub <= 156)[0]] = -1
+        ysub[np.where(ysub  > 156)[0]] =  1
+
+        Xsub = Xsub[:, goodfeatures]
+        Xsub = (Xsub - np.mean(Xsub)) / np.std(Xsub)
+
+        sys.stderr.write('\nSize = %d  ==> '%(n))
+        tr_idx = np.random.choice(n, size=20000, replace=False)
+        ts_idx = np.setdiff1d(np.arange(n), tr_idx, assume_unique=True)
+        yts = ysub[ts_idx]
+
+        clf = sklearn.svm.SVC(C=1.0, kernel='rbf', gamma=0.10)
+        clf.fit(Xsub[tr_idx, :], ysub[tr_idx])
+        ypred = clf.predict(Xsub[ts_idx, :])
+        tp = np.sum(ypred[np.where(yts ==  1)[0]] == 1)
+        fp = np.sum(ypred[np.where(yts == -1)[0]] == 1)
+        tn = np.sum(ypred[np.where(yts == -1)[0]] == -1)
+        print ("%d (%d %d %d %d)"%(i, tp, fp, tn, yts.shape[0]-(tp+fp+tn)))
 
 
 if __name__ == '__main__':
