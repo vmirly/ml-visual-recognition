@@ -1,6 +1,9 @@
 # data files:
+jobs/
 data/
 data/digits/
+
+hf*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

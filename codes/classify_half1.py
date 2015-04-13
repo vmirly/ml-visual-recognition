@@ -143,7 +143,7 @@ def main():
     #print(Xsub.shape)
     #print(np.unique(ysub))
 
-    n = 20000
+    n = 50000
     for i in range(1):
         Xsub, ysub = readRandomSample(args.train, y[0], size=n, goodfeat=goodfeatures)
 
@@ -169,7 +169,7 @@ def main():
         print('CrossVal-Perf: Prec=%.3f  Recall=%.3f   F1-score=%.3f\n'%(prec, recall, f1score))
 
         np.savetxt('%s.cv'%args.out, ypred_cv, fmt='%d', \
-            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f'%(prec, recall, f1score))
+            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f (n= %d )'%(prec, recall, f1score, n))
         Xtest = pandas.read_table(args.test, sep=' ', usecols=goodfeatures, dtype='int', header=None)
         Xtest = (Xtest - x_mean) / x_std
         sys.stderr.write('Test data  shape=(%d,%d)'%(Xtest.shape[0], Xtest.shape[1]))
@@ -177,7 +177,7 @@ def main():
         #ypred = np.zeros(shape=Xtest.shape[0], dtype=int)
         ypred = clf.predict(Xtest)
         np.savetxt(args.out, ypred, fmt='%d', \
-            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f'%(prec, recall, f1score))
+            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f (n= %d )'%(prec, recall, f1score, n))
 
 
 
