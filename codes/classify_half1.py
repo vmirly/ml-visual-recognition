@@ -113,10 +113,11 @@ def main():
     parser.add_argument('train', help='Training Data')
     parser.add_argument('labels', help='Training Labels')
     parser.add_argument('test', help='Test Data')
-    parser.add_argument('out', help='Output file name')
 
     parser.add_argument('data_cv', help='Data for CrossValidation')
     parser.add_argument('label_cv', help='Labels for CrossValidation')
+
+    parser.add_argument('out', help='Output file name')
 
     args = parser.parse_args()
 
@@ -142,7 +143,7 @@ def main():
     #print(Xsub.shape)
     #print(np.unique(ysub))
 
-    n = 20000
+    n = 2000
     for i in range(1):
         Xsub, ysub = readRandomSample(args.train, y[0], size=n, goodfeat=goodfeatures)
 
@@ -159,7 +160,7 @@ def main():
         clf.fit(Xsub, ysub)
 
         Xcv = pandas.read_table(args.data_cv, sep=' ', usecols=goodfeatures, dtype='int', header=None)
-        ytrue_cv = pandas.read_table(args.label_cv, sep=' ', dtype='int', header=None)
+        ytrue_cv = pandas.read_table(args.label_cv, sep=' ', dtype='int', header=None)[0]
         ytrue_cv[np.where(ytrue_cv <= 156)[0]] = -1
         ytrue_cv[np.where(ytrue_cv  > 156)[0]] =  1
         Xcv = (Xcv - x_mean) / x_std
@@ -167,13 +168,16 @@ def main():
         prec, recall, f1score = evalPerformance(ytrue_cv, ypred_cv)
         print('CrossVal-Perf: Prec=%.3f  Recall=%.3f   F1-score=%.3f\n'%(prec, recall, f1score))
 
-        Xtest = pandas.read_table(args.test, sep=" ", usecols=goodfeatures, dtype='int', header=None)
+        np.savetxt('%s.cv'%args.out, ypred_cv, fmt='%d', \
+            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f'%(prec, recall, f1score))
+        Xtest = pandas.read_table(args.test, sep=' ', usecols=goodfeatures, dtype='int', header=None)
         Xtest = (Xtest - x_mean) / x_std
         sys.stderr.write('Test data  shape=(%d,%d)'%(Xtest.shape[0], Xtest.shape[1]))
 
         #ypred = np.zeros(shape=Xtest.shape[0], dtype=int)
         ypred = clf.predict(Xtest)
-        np.save_txt(args.out, ypred, header='# CrossVal-Perf.: Prec=%.3f_Recall=%.3f_F1-score=%.3f \n'%(prec, recall, f1score))
+        np.savetxt(args.out, ypred, fmt='%d', \
+            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f'%(prec, recall, f1score))
 
 
 
