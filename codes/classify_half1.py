@@ -91,6 +91,20 @@ def readRandomSample(data_fname, y, size, goodfeat=None, acc_miny=None, acc_maxy
             n += 1
     return(Xsub, ysub)
 
+### Performance Evaluation
+def evalPerformance(ytrue, ypred):
+    tp = np.sum(ypred[np.where(ytrue ==  1)[0]] == 1)
+    fp = np.sum(ypred[np.where(ytrue == -1)[0]] == 1)
+    tn = np.sum(ypred[np.where(ytrue == -1)[0]] == -1)
+    fn = ytrue.shape[0]-(tp+fp+tn)
+    #sys.stderr.write (" (%d %d %d %d)"%(tp, fp, tn, fn))
+
+    prec = tp / float(tp + fp)
+    recall  = tp / float(tp + fn)
+    f1score = 2*tp / float(2*tp + fp + fn)
+
+    return (prec, recall, f1score)
+
 #--------------------------------------#
 #                 MAIN                 #
 #--------------------------------------#
@@ -99,6 +113,11 @@ def main():
     parser.add_argument('train', help='Training Data')
     parser.add_argument('labels', help='Training Labels')
     parser.add_argument('test', help='Test Data')
+    parser.add_argument('out', help='Output file name')
+
+    parser.add_argument('data_cv', help='Data for CrossValidation')
+    parser.add_argument('label_cv', help='Labels for CrossValidation')
+
     args = parser.parse_args()
 
     y = pandas.read_table(args.labels, sep=" ", dtype='int', header=None)
@@ -123,27 +142,39 @@ def main():
     #print(Xsub.shape)
     #print(np.unique(ysub))
 
+    n = 20000
     for i in range(1):
-        Xsub, ysub = readRandomSample(args.train, y[0], size=32000, goodfeat=goodfeatures)
+        Xsub, ysub = readRandomSample(args.train, y[0], size=n, goodfeat=goodfeatures)
 
         ysub[np.where(ysub <= 156)[0]] = -1
         ysub[np.where(ysub  > 156)[0]] =  1
 
-        Xsub = Xsub[:, goodfeatures]
-        Xsub = (Xsub - np.mean(Xsub)) / np.std(Xsub)
+        x_mean = np.mean(Xsub, axis=0)
+        x_std = np.std(Xsub, axis=0)
+        Xsub = (Xsub - x_mean) / x_std
 
-        sys.stderr.write('\nSize = %d  ==> '%(n))
-        tr_idx = np.random.choice(n, size=20000, replace=False)
-        ts_idx = np.setdiff1d(np.arange(n), tr_idx, assume_unique=True)
-        yts = ysub[ts_idx]
+        sys.stderr.write('Applying SVM classification ... %d'%(i))
 
-        clf = sklearn.svm.SVC(C=1.0, kernel='rbf', gamma=0.10)
-        clf.fit(Xsub[tr_idx, :], ysub[tr_idx])
-        ypred = clf.predict(Xsub[ts_idx, :])
-        tp = np.sum(ypred[np.where(yts ==  1)[0]] == 1)
-        fp = np.sum(ypred[np.where(yts == -1)[0]] == 1)
-        tn = np.sum(ypred[np.where(yts == -1)[0]] == -1)
-        print ("%d (%d %d %d %d)"%(i, tp, fp, tn, yts.shape[0]-(tp+fp+tn)))
+        clf = sklearn.svm.SVC(C=1.0, kernel='rbf', gamma=0.0010)
+        clf.fit(Xsub, ysub)
+
+        Xcv = pandas.read_table(args.data_cv, sep=' ', usecols=goodfeatures, dtype='int', header=None)
+        ytrue_cv = pandas.read_table(args.label_cv, sep=' ', dtype='int', header=None)
+        ytrue_cv[np.where(ytrue_cv <= 156)[0]] = -1
+        ytrue_cv[np.where(ytrue_cv  > 156)[0]] =  1
+        Xcv = (Xcv - x_mean) / x_std
+        ypred_cv = clf.predict(Xcv)
+        prec, recall, f1score = evalPerformance(ytrue_cv, ypred_cv)
+        print('CrossVal-Perf: Prec=%.3f  Recall=%.3f   F1-score=%.3f\n'%(prec, recall, f1score))
+
+        Xtest = pandas.read_table(args.test, sep=" ", usecols=goodfeatures, dtype='int', header=None)
+        Xtest = (Xtest - x_mean) / x_std
+        sys.stderr.write('Test data  shape=(%d,%d)'%(Xtest.shape[0], Xtest.shape[1]))
+
+        #ypred = np.zeros(shape=Xtest.shape[0], dtype=int)
+        ypred = clf.predict(Xtest)
+        np.save_txt(args.out, ypred, header='# CrossVal-Perf.: Prec=%.3f_Recall=%.3f_F1-score=%.3f \n'%(prec, recall, f1score))
+
 
 
 if __name__ == '__main__':
