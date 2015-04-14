@@ -43,11 +43,11 @@ def main():
     print(cstat['all'][1][1:10])
 
 
-    rdiff = calStandMeanDiff(y, cstat, np.arange(1,157), np.arange(157, 165))
+    rdiff = calStandMeanDiff(y, cstat, np.arange(157,162), np.arange(162, 165))
     ## Good Features:
     goodfeatures = np.where(rdiff > 0.1)[0]
     print(goodfeatures)
-
+    sys.stderr.write('Number of Features: %d'%goodfeatures.shape[0])
     #gf_test = np.arange(21,35)
     #Xsub, ysub = readRandomSample(args.train, y[0], \
     #                          size=2000, goodfeat=gf_test, acc_miny=15, acc_maxy=20)
@@ -56,10 +56,11 @@ def main():
 
     n = 50000
     for i in range(1):
-        Xsub, ysub = readRandomSample(args.train, y[0], size=n, goodfeat=goodfeatures)
-
-        ysub[np.where(ysub <= 156)[0]] = -1
-        ysub[np.where(ysub  > 156)[0]] =  1
+        Xsub, ysub = readRandomSample(args.train, y[0], size=n, \
+                goodfeat=goodfeatures, acc_miny=157, acc_maxy=164)
+        assert(np.sum(ysub < 157) == 0)
+        ysub[np.where(ysub <  162)[0]] = -1
+        ysub[np.where(ysub >= 162)[0]] =  1
 
         x_mean = np.mean(Xsub, axis=0)
         x_std = np.std(Xsub, axis=0)
@@ -67,13 +68,16 @@ def main():
 
         sys.stderr.write('Applying SVM classification ... %d'%(i))
 
-        clf = sklearn.svm.SVC(C=1.0, kernel='rbf', gamma=0.0010)
+        clf = sklearn.svm.SVC(C=0.8, kernel='rbf', gamma=0.0050)
         clf.fit(Xsub, ysub)
 
         Xcv = pandas.read_table(args.data_cv, sep=' ', usecols=goodfeatures, dtype='int', header=None)
         ytrue_cv = pandas.read_table(args.label_cv, sep=' ', dtype='int', header=None)[0]
-        ytrue_cv[np.where(ytrue_cv <= 156)[0]] = -1
-        ytrue_cv[np.where(ytrue_cv  > 156)[0]] =  1
+        Xcv = Xcv.iloc[np.where(ytrue_cv >= 157)[0],:]
+        print('CrossVal Shape= %d,%d' %Xcv.shape)
+        ytrue_cv = ytrue_cv[np.where(ytrue_cv >= 157)[0]].values
+        ytrue_cv[np.where(ytrue_cv <  162)[0]] = -1
+        ytrue_cv[np.where(ytrue_cv >= 162)[0]] =  1
         Xcv = (Xcv - x_mean) / x_std
         ypred_cv = clf.predict(Xcv)
         prec, recall, f1score = evalPerformance(ytrue_cv, ypred_cv)
