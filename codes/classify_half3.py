@@ -61,7 +61,7 @@ def main():
     #print(Xsub.shape)
     #print(np.unique(ysub))
 
-    n = 500
+    n = 50000
     for i in range(1):
         Xsub, ysub = readRandomSample(args.train, y[0], size=n, \
                 goodfeat=goodfeatures, acc_miny=ymin, acc_maxy=ymax)
