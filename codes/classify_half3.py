@@ -70,8 +70,13 @@ def main():
         ysub[np.where(ysub <  ysplit)[0]] = -1
         ysub[np.where(ysub >= ysplit)[0]] =  1
 
+	features_idx = np.where(np.std(Xsub, axis=0)> 0.0001)[0]
+	print("Number of Good Features: %d"%features_idx.shape[0])
+	Xsub = Xsub[:,features_idx]
+
         x_mean = np.mean(Xsub, axis=0)
         x_std = np.std(Xsub, axis=0)
+
         Xsub = (Xsub - x_mean) / x_std
 
         sys.stderr.write('Applying SVM classification ... %d'%(i))
@@ -102,7 +107,8 @@ def main():
         print('CrossVal-Perf: Prec=%.3f  Recall=%.3f   F1-score=%.3f\n'%(prec, recall, f1score))
 
         np.savetxt('%s.cv'%args.out, ypred_cv, fmt='%d', \
-            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f (n= %d )'%(prec, recall, f1score, n))
+            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f (n= %d  dim= %d )' \
+		%(prec, recall, f1score, n, features_idx.shape[0]))
         Xtest = pandas.read_table(args.test, sep=' ', usecols=goodfeatures, dtype='int', header=None)
         Xtest = (Xtest - x_mean) / x_std
         sys.stderr.write('Test data  shape=(%d,%d)'%(Xtest.shape[0], Xtest.shape[1]))
@@ -110,7 +116,8 @@ def main():
         #ypred = np.zeros(shape=Xtest.shape[0], dtype=int)
         ypred = clf.predict(Xtest)
         np.savetxt(args.out, ypred, fmt='%d', \
-            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f (n= %d )'%(prec, recall, f1score, n))
+            header=' CrossVal-Perf.: Prec %.3f Recall %.3f F1-score %.3f (n= %d  dim= %d )' \
+		%(prec, recall, f1score, n, features_idx.shape[0]))
 
 
 
