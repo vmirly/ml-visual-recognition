@@ -3,7 +3,9 @@ jobs/
 data/
 data/digits/
 
-hf*
+results/hf?/
+
+hf?.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
