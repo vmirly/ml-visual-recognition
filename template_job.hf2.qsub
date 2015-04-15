@@ -1,0 +1,22 @@
+#!/bin/bash -l
+#PBS -l nodes=1:ppn=1,walltime=4:00:00
+#PBS -l mem=5gb
+#PBS -j oe
+#PBS -N hf2.r__REP__.__NUM__
+#PBS -m a
+#PBS -t __NUM__ 
+# Run the job
+
+ #  -M vmirjalily@gmail.com
+
+
+cd /mnt/home/mirjalil/Github/ml-visual-recognition/
+
+
+/home/mirjalil/miniconda/bin/python codes/classify_half2.py data/data_tr.txt data/label_tr.txt data/data_test.txt data/data_cv.txt data/label_cv.txt results/hf2/pred.rep___REP__.__NUM__ 
+
+
+
+./prep_next.v2.sh hf2 __REP__ __NUM__
+
+qstat -f ${PBS_JOBID}
