@@ -3,6 +3,8 @@ jobs/
 data/
 data/digits/
 
+results/hf?/
+
 hf?.*
 
 # Byte-compiled / optimized / DLL files
