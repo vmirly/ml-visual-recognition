@@ -11,12 +11,14 @@ import pickle
 
 
 sys.path.append('codes/')
-from utilities import *
+from utilities_v2 import *
 
 
 ymin = 162
 ysplit = 164
 ymax = 164
+
+feat_threshold = 0.001
 
 optimal_c = 2.00
 optimal_gamma = 0.002
@@ -50,7 +52,7 @@ def main():
 
     rdiff = calStandMeanDiff(y, cstat, np.arange(ymin,ysplit), np.arange(ysplit, ymax+1))
     ## Good Features:
-    goodfeatures = np.where(rdiff > 0.1)[0]
+    goodfeatures = np.where(rdiff > feat_threshold)[0]
     print(goodfeatures)
     sys.stderr.write('Number of Features: %d'%goodfeatures.shape[0])
     #gf_test = np.arange(21,35)
