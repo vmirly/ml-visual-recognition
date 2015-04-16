@@ -6,6 +6,7 @@ data/digits/
 results/hf?/
 
 hf?.*
+template_job.*.qsub
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
