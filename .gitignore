@@ -4,6 +4,7 @@ data/
 data/digits/
 
 results/hf?/
+results/lower/
 
 hf?.*
 template_job.*.qsub
