@@ -21,6 +21,7 @@ def main():
     parser.add_argument('label_cv', help='Labels for CrossValidation')
 
     parser.add_argument('plab', type=int, help='The class to be predicted')
+    parser.add_argument('cost', type=float, help='The cost variable (C)')
     parser.add_argument('out', help='Output file name')
 
     args = parser.parse_args()
@@ -37,7 +38,7 @@ def main():
 
     # ## Logistic Regression
 
-    clf = linear_model.LogisticRegression(penalty='l2', dual=False, tol=0.00001, C=0.001, \
+    clf = linear_model.LogisticRegression(penalty='l2', dual=False, tol=0.00001, C=args.cost, \
 			fit_intercept=True, intercept_scaling=1, class_weight=None, \
 			random_state=None, solver='liblinear', max_iter=10000)
 
@@ -49,7 +50,7 @@ def main():
     y[np.where(y_all[0] != ic)[0]] = -1
     y[np.where(y_all[0] == ic)[0]] = 1
 
-    print(y.shape, np.sum(y==1), np.sum(y==-1))
+    print('Training set: %d  Pos: %d   Neg: %d'%(y.shape[0], np.sum(y==1), np.sum(y==-1)))
 
     chunks=100000
 
@@ -73,13 +74,14 @@ def main():
     ### Reading cross-validation set
 
     Xcv = pandas.read_table(args.data_cv, sep=' ', header=None)
-    print(Xcv.shape)
+    print(ic, Xcv.shape)
 
-    ycv = pandas.read_table(args.label_cv, sep=' ', header=None)[0]
-    ycv[np.where(ycv==ic)[0]] = -1
-    ycv[np.where(ycv==ic)[0]] = 1
+    ycv = pandas.read_table(args.label_cv, sep=' ', header=None)[0].values
+    ycv[np.where(ycv != ic)[0]] = -1
+    ycv[np.where(ycv == ic)[0]] = 1
 
-    print(Xcv.shape, ycv.shape, np.sum(ycv == 1))
+    print('CrossValidation %d %d  for label=%d ==>\tPos: %d  Neg: %d' \
+	%(Xcv.shape[0], ycv.shape[0], ic, np.sum(ycv == 1), np.sum(ycv == -1)))
 
     ypred_cv = clf.predict(Xcv)
 
@@ -87,8 +89,15 @@ def main():
     rec  = recall_score(ycv, ypred_cv)
     f1score = f1_score(ycv, ypred_cv)
 
-    print(prec, rec, f1score)
-    print(np.sum(ypred_cv == 1), np.sum(ycv == 1))
+    print('Precision=%d Recall=%d F1Score=%d'%(prec, rec, f1score))
+    print('CrossVal: ==> TP+FP=%d   \t  TP+FN=%d'%(np.sum(ypred_cv == 1), np.sum(ycv == 1)))
+
+
+    n = 0
+    for Xtest in pandas.read_table(args.test, sep=' ', header=None, iterator=True, chunksize=10000):
+	ypred = clf.predict(Xtest)
+	print('TestSet part %d ==> pos-predicted=%d  '%(n, np.sum(ypred == 1)))
+	pandas.DataFrame({'pred':ypred}).to_csv(args.out, mode='a')
 
 
 if __name__ == '__main__':
