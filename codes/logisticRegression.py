@@ -52,7 +52,7 @@ def main():
 
     print('Training set: %d  Pos: %d   Neg: %d'%(y.shape[0], np.sum(y==1), np.sum(y==-1)))
 
-    chunks=100000
+    chunks=500000
 
     for i in range(1):
        sys.stdout.write('%d '%(i))
@@ -89,7 +89,7 @@ def main():
     rec  = recall_score(ycv, ypred_cv)
     f1score = f1_score(ycv, ypred_cv)
 
-    print('Precision=%d Recall=%d F1Score=%d'%(prec, rec, f1score))
+    print('Precision=%.3f Recall=%.3f F1Score=%.3f'%(prec, rec, f1score))
     print('CrossVal: ==> TP+FP=%d   \t  TP+FN=%d'%(np.sum(ypred_cv == 1), np.sum(ycv == 1)))
 
 
@@ -97,7 +97,12 @@ def main():
     for Xtest in pandas.read_table(args.test, sep=' ', header=None, iterator=True, chunksize=10000):
 	ypred = clf.predict(Xtest)
 	print('TestSet part %d ==> pos-predicted=%d  '%(n, np.sum(ypred == 1)))
-	pandas.DataFrame({'pred':ypred}).to_csv(args.out, mode='a')
+        if n==0:
+	   mode='w'
+        else:
+	   mode = 'a'
+	pandas.DataFrame({'pred':ypred}).to_csv(args.out, mode=mode, header='%.3f %.3f %.3f'%(prec, rec, f1score))
+	n += 1
 
 
 if __name__ == '__main__':
